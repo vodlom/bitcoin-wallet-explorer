@@ -41,5 +41,3 @@ The interface follows a clean, modern aesthetic with an emphasis on readability 
 This project is open source and available under the MIT License.
 
 ---
-
-Explorador de Carteira Bitcoin — 2025 | Desenvolvido por [Moldov](https://github.com/vodlom), utilizando as APIs da [BlockCypher](https://www.blockcypher.com/dev/bitcoin/) e [CoinGecko](https://www.coingecko.com/en/api).
