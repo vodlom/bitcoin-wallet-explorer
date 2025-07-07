@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Explorador de Carteira Bitcoin | Rastreie Transações e Saldos</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* Cores base */
+    :root {
+      --primary: #f7931a;
+      --primary-dark: #e07e0c;
+      --primary-light: #ffaa40;
+      --dark: #1a1a1a;
+      --dark-gray: #2d2d2d;
+      --medium-gray: #4a4a4a;
+      --light-gray: #e0e0e0;
+      --white: #ffffff;
+      --success: #27ae60;
+      --danger: #e74c3c;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      --transition: all 0.3s ease;
+      
+      /* Cores modo escuro */
+      --bg-dark: #0f172a;
+      --card-dark: #1e293b;
+      --text-dark: #e2e8f0;
+      --border-dark: #334155;
+    }
+
+    /* Reset e estilos base */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-dark);
+      line-height: 1.6;
+      transition: var(--transition);
+    }
+
+    /* Modo claro */
+    body.light-mode {
+      background-color: #f8f9fa;
+      color: #333;
+    }
+
+    body.light-mode .search-card,
+    body.light-mode .result-card,
+    body.light-mode .transaction,
+    body.light-mode .info-item {
+      background-color: var(--white);
+      border-color: var(--light-gray);
+    }
+
+    body.light-mode .info-item {
+      background-color: rgba(247, 147, 26, 0.1);
+    }
+
+    body.light-mode .tx-hash {
+      color: #555;
+    }
+
+    body.light-mode .empty-state i {
+      color: var(--light-gray);
+    }
+
+    body.light-mode .info-item h3,
+    body.light-mode .wallet-info h2,
+    body.light-mode .transactions h3,
+    body.light-mode .tx-date,
+    body.light-mode .subtitle,
+    body.light-mode footer {
+      color: #444;
+    }
+
+    body.light-mode .wallet-address {
+      color: #333;
+      background: rgba(0, 0, 0, 0.05);
+    }
+
+    /* Layout principal */
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    /* Cabeçalho */
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+      animation: fadeInDown 0.8s ease;
+      position: relative;
+    }
+
+    /* Botão de tema */
+    .theme-toggle {
+      position: absolute;
+      right: 0;
+      top: 0;
+      background: var(--card-dark);
+      border: none;
+      color: var(--primary);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+      box-shadow: var(--shadow);
+    }
+
+    body.light-mode .theme-toggle {
+      background: var(--white);
+    }
+
+    .theme-toggle:hover {
+      transform: rotate(20deg) scale(1.1);
+    }
+
+    /* Logo */
+    .logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 15px;
+    }
+
+    .logo i {
+      font-size: 2.5rem;
+      color: var(--primary);
+      margin-right: 10px;
+      animation: pulse 2s infinite;
+    }
+
+    .logo h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text-dark);
+    }
+
+    body.light-mode .logo h1 {
+      color: var(--dark);
+    }
+
+    .subtitle {
+      color: var(--text-dark);
+      opacity: 0.8;
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+    }
+
+    /* Card de busca */
+    .search-card {
+      background: var(--card-dark);
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: var(--shadow);
+      margin-bottom: 30px;
+      transition: var(--transition);
+      animation: fadeIn 0.8s ease;
+      border: 1px solid var(--border-dark);
+    }
+
+    .search-card:hover {
+      box-shadow: 0 8px 30px rgba(247, 147, 26, 0.2);
+      transform: translateY(-3px);
+    }
+
+    /* Campo de entrada */
+    .input-group {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: var(--text-dark);
+      opacity: 0.9;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 15px 20px;
+      border: 2px solid var(--border-dark);
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: var(--transition);
+      background-color: rgba(255, 255, 255, 0.05);
+      color: var(--text-dark);
+    }
+
+    body.light-mode .input-group input {
+      background-color: var(--white);
+      color: var(--dark);
+      border-color: var(--light-gray);
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(247, 147, 26, 0.2);
+    }
+
+    .input-group input::placeholder {
+      color: #aaa;
+    }
+
+    /* Endereço da carteira */
+    .wallet-address {
+      word-break: break-all;
+      font-family: monospace;
+      font-size: 0.9rem;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 8px 12px;
+      border-radius: 6px;
+      display: inline-block;
+      margin-top: 5px;
+    }
+
+    /* Botões */
+    .btn {
+      display: inline-block;
+      padding: 15px 30px;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      text-align: center;
+      width: 100%;
+    }
+
+    .btn:hover {
+      background-color: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(247, 147, 26, 0.3);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn i {
+      margin-right: 8px;
+    }
+
+    .btn-load-more {
+      background-color: transparent;
+      color: var(--primary);
+      border: 2px solid var(--primary);
+      margin-top: 20px;
+      width: auto;
+      padding: 12px 25px;
+    }
+
+    .btn-load-more:hover {
+      background-color: rgba(247, 147, 26, 0.1);
+    }
+
+    /* Resultados */
+    .result-card {
+      background: var(--card-dark);
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+      transition: var(--transition);
+      opacity: 0;
+      transform: translateY(20px);
+      animation: fadeInUp 0.5s ease forwards;
+      border: 1px solid var(--border-dark);
+    }
+
+    .result-card.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Informações da carteira */
+    .wallet-info {
+      margin-bottom: 20px;
+    }
+
+    .wallet-info h2 {
+      font-size: 1.5rem;
+      margin-bottom: 15px;
+      color: var(--text-dark);
+      display: flex;
+      align-items: center;
+    }
+
+    .wallet-info h2 i {
+      color: var(--primary);
+      margin-right: 10px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    .info-item {
+      background-color: rgba(247, 147, 26, 0.1);
+      padding: 15px;
+      border-radius: 8px;
+      border-left: 4px solid var(--primary);
+      transition: var(--transition);
+    }
+
+    .info-item:hover {
+      transform: translateY(-3px);
+    }
+
+    .info-item h3 {
+      font-size: 0.9rem;
+      color: var(--text-dark);
+      opacity: 0.8;
+      margin-bottom: 5px;
+    }
+
+    .info-item p {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-dark);
+    }
+
+    /* Saldo */
+    .balance {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin: 10px 0;
+      text-align: center;
+      animation: pulse 2s infinite;
+    }
+
+    /* Transações */
+    .transactions h3 {
+      font-size: 1.3rem;
+      margin: 25px 0 15px;
+      color: var(--text-dark);
+      opacity: 0.9;
+      display: flex;
+      align-items: center;
+    }
+
+    .transactions h3 i {
+      color: var(--primary);
+      margin-right: 10px;
+    }
+
+    .transaction {
+      padding: 20px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      background-color: var(--card-dark);
+      border: 1px solid var(--border-dark);
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    body.light-mode .transaction {
+      background-color: var(--white);
+      border-color: var(--light-gray);
+    }
+
+    .transaction:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      border-color: var(--primary-light);
+    }
+
+    .transaction::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background-color: var(--primary);
+    }
+
+    .tx-hash {
+      font-family: monospace;
+      font-size: 0.9rem;
+      color: var(--text-dark);
+      word-break: break-word;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+    }
+
+    .tx-hash i {
+      margin-right: 8px;
+      color: var(--primary);
+    }
+
+    .tx-details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-top: 10px;
+    }
+
+    .tx-value {
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    .tx-value.incoming {
+      color: var(--success);
+    }
+
+    .tx-value.outgoing {
+      color: var(--danger);
+    }
+
+    .tx-date {
+      color: var(--text-dark);
+      opacity: 0.8;
+      font-size: 0.9rem;
+    }
+
+    /* Mensagens de erro */
+    .error {
+      background-color: rgba(231, 76, 60, 0.1);
+      color: var(--danger);
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+      border-left: 4px solid var(--danger);
+      display: none;
+    }
+
+    /* Loading */
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 30px;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(247, 147, 26, 0.2);
+      border-top: 4px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    /* Estado vazio */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-dark);
+      opacity: 0.7;
+    }
+
+    .empty-state i {
+      font-size: 3rem;
+      color: var(--border-dark);
+      margin-bottom: 15px;
+    }
+
+    .empty-state p {
+      font-size: 1.1rem;
+    }
+
+    /* Rodapé */
+    footer {
+      text-align: center;
+      margin-top: 50px;
+      padding: 20px;
+      color: var(--text-dark);
+      opacity: 0.7;
+      font-size: 0.9rem;
+    }
+
+    /* Animações */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-5px); }
+      100% { transform: translateY(0px); }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+      20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+
+    /* Responsividade */
+    @media (max-width: 768px) {
+      .container {
+        padding: 15px;
+      }
+      
+      .logo h1 {
+        font-size: 1.5rem;
+      }
+      
+      .subtitle {
+        font-size: 1rem;
+      }
+      
+      .search-card, .result-card {
+        padding: 20px;
+      }
+      
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .theme-toggle {
+        top: -10px;
+        right: -10px;
+      }
+    }
+
+    a.animated-link {
+  color: #e07e0c; /* laranja escuro */
+  text-decoration: none;
+  animation: colorPulse 3s infinite alternate;
+  transition: color 0.3s ease;
+}
+
+@keyframes colorPulse {
+  0% {
+    color: #e07e0c; /* laranja escuro */
+  }
+  100% {
+    color: #ffdd57; /* amarelo */
+  }
+}
+
+a.animated-link:hover {
+  color: #ffaa40; /* laranja claro no hover */
+}
+
+  </style>
+</head>
+<body class="dark-mode">
+  <div class="container">
+    <header>
+      <button class="theme-toggle" id="themeToggle" title="Alternar modo claro/escuro">
+        <i class="fas fa-moon"></i>
+      </button>
+      <div class="logo">
+        <i class="fab fa-bitcoin"></i>
+        <h1>Explorador de Carteira Bitcoin</h1>
+      </div>
+      <p class="subtitle">Rastreie transações, saldos e atividades de qualquer endereço Bitcoin</p>
+    </header>
+
+    <div class="search-card">
+      <div class="input-group">
+        <label for="endereco">Endereço da Carteira Bitcoin</label>
+        <input type="text" id="endereco" placeholder="Digite um endereço Bitcoin (ex: 1BoatSLRHtKNngkdXEeobR76b53LETtpyT)" />
+      </div>
+      <button id="buscarBtn" class="btn">
+        <i class="fas fa-search"></i> Buscar Carteira
+      </button>
+    </div>
+
+    <div id="erro" class="error"></div>
+
+    <div id="infoGeral" class="result-card" style="display:none;">
+      <div class="loading">
+        <div class="spinner"></div>
+      </div>
+    </div>
+
+    <div id="listaTx" class="result-card" style="display:none;">
+      <div class="transactions">
+        <h3><i class="fas fa-exchange-alt"></i> Transações</h3>
+        <div class="loading">
+          <div class="spinner"></div>
+        </div>
+      </div>
+    </div>
+
+    <button id="carregarMaisBtn" class="btn btn-load-more" style="display:none;">
+      <i class="fas fa-arrow-down"></i> Carregar Mais Transações
+    </button>
+
+    <footer>
+      <p>Explorador de Carteira Bitcoin — 2025 | Desenvolvido por 
+          <a href="https://github.com/vodlom" target="_blank" rel="noopener noreferrer" class="animated-link">Moldov</a>, utilizando as APIs da 
+          <a href="https://www.blockcypher.com/dev/bitcoin/" target="_blank" rel="noopener noreferrer" class="animated-link">BlockCypher</a> e 
+          <a href="https://www.coingecko.com/en/api" target="_blank" rel="noopener noreferrer" class="animated-link">CoinGecko</a>.
+      </p>
+    </footer>
+  </div>
+
+  <script>
+    // Tema claro/escuro
+    const themeToggle = document.getElementById('themeToggle');
+    const body = document.body;
+    const icon = themeToggle.querySelector('i');
+    
+    // Verifica preferência salva ou usa modo escuro como padrão
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    body.classList.add(savedTheme + '-mode');
+    atualizarIconeTema(savedTheme);
+    
+    themeToggle.addEventListener('click', () => {
+      if (body.classList.contains('dark-mode')) {
+        body.classList.remove('dark-mode');
+        body.classList.add('light-mode');
+        localStorage.setItem('theme', 'light');
+        atualizarIconeTema('light');
+      } else {
+        body.classList.remove('light-mode');
+        body.classList.add('dark-mode');
+        localStorage.setItem('theme', 'dark');
+        atualizarIconeTema('dark');
+      }
+    });
+    
+    function atualizarIconeTema(tema) {
+      if (tema === 'dark') {
+        icon.classList.remove('fa-sun');
+        icon.classList.add('fa-moon');
+      } else {
+        icon.classList.remove('fa-moon');
+        icon.classList.add('fa-sun');
+      }
+    }
+
+    // Lógica da carteira Bitcoin
+    const buscarBtn = document.getElementById('buscarBtn');
+    const carregarMaisBtn = document.getElementById('carregarMaisBtn');
+    const enderecoInput = document.getElementById('endereco');
+    const infoGeralDiv = document.getElementById('infoGeral');
+    const listaTxDiv = document.getElementById('listaTx');
+    const erroDiv = document.getElementById('erro');
+
+    let enderecoAtual = '';
+    let lastTxHash = null;
+    let carregando = false;
+    let totalTxs = 0;
+    let transacoesCarregadas = 0;
+
+    buscarBtn.addEventListener('click', () => {
+      enderecoAtual = enderecoInput.value.trim();
+      if (!enderecoAtual) {
+        mostrarErro('Por favor, insira um endereço Bitcoin válido.');
+        return;
+      }
+      limparErro();
+      infoGeralDiv.style.display = 'none';
+      listaTxDiv.style.display = 'none';
+      carregarMaisBtn.style.display = 'none';
+      
+      // Mostra estado de carregamento
+      infoGeralDiv.innerHTML = `
+        <div class="loading">
+          <div class="spinner"></div>
+        </div>
+      `;
+      listaTxDiv.querySelector('.transactions').innerHTML = `
+        <h3><i class="fas fa-exchange-alt"></i> Transações</h3>
+        <div class="loading">
+          <div class="spinner"></div>
+        </div>
+      `;
+      
+      infoGeralDiv.style.display = 'block';
+      listaTxDiv.style.display = 'block';
+      
+      // Animação de fade in
+      setTimeout(() => {
+        infoGeralDiv.classList.add('visible');
+        listaTxDiv.classList.add('visible');
+      }, 50);
+      
+      lastTxHash = null;
+      transacoesCarregadas = 0;
+      carregarDados(enderecoAtual);
+    });
+
+    carregarMaisBtn.addEventListener('click', () => {
+      if (!carregando && lastTxHash) {
+        carregarDados(enderecoAtual, lastTxHash);
+      }
+    });
+
+    function mostrarErro(mensagem) {
+      erroDiv.textContent = mensagem;
+      erroDiv.style.display = 'block';
+      erroDiv.style.animation = 'shake 0.5s';
+      setTimeout(() => {
+        erroDiv.style.animation = '';
+      }, 500);
+    }
+
+    function limparErro() {
+      erroDiv.textContent = '';
+      erroDiv.style.display = 'none';
+    }
+
+    function formatarBTC(valor) {
+      return parseFloat(valor).toLocaleString('pt-BR', {
+        minimumFractionDigits: 8,
+        maximumFractionDigits: 8
+      });
+    }
+
+    function formatarNumero(num) {
+      return num.toLocaleString('pt-BR');
+    }
+
+    let precoBTC_USD = 0;
+
+// Carrega o preço atual do BTC em USD
+async function carregarPrecoBTC() {
+  try {
+    const response = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd");
+    const data = await response.json();
+    precoBTC_USD = data.bitcoin.usd || 0;
+  } catch (error) {
+    console.error("Erro ao obter o preço do BTC em USD:", error);
+    precoBTC_USD = 0;
+  }
+}
+
+// Formata valor em dólar
+function formatarUSD(valor) {
+  return valor.toLocaleString('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2
+  });
+}
+
+
+    async function carregarDados(endereco, beforeHash = null) {
+      carregando = true;
+      limparErro();
+      
+      if (precoBTC_USD === 0) {
+  await carregarPrecoBTC();
+}
+
+      if (beforeHash === null) {
+        // Primeira carga
+        infoGeralDiv.classList.remove('visible');
+        listaTxDiv.classList.remove('visible');
+      } else {
+        carregarMaisBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Carregando...';
+        carregarMaisBtn.disabled = true;
+      }
+
+      try {
+        // Monta URL da API com paginação (limite 10)
+        let url = `https://api.blockcypher.com/v1/btc/main/addrs/${endereco}/full?limit=10`;
+        if (beforeHash) {
+          url += `&before=${beforeHash}`;
+        }
+
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Endereço inválido ou erro na consulta.');
+
+        const data = await response.json();
+
+        if (beforeHash === null) {
+          // Primeira carga: mostra saldo e total de transações
+          totalTxs = data.n_tx || 0;
+          const saldoSatoshis = data.final_balance || 0;
+          const saldoBTC = saldoSatoshis / 1e8;
+          const receivedBTC = (data.total_received || 0) / 1e8;
+          const sentBTC = (data.total_sent || 0) / 1e8;
+
+          let infoHtml = `
+            <div class="wallet-info">
+              <h2><i class="fas fa-wallet"></i> Resumo da Carteira</h2>
+              <div class="info-grid">
+                <div class="info-item">
+                  <h3>Endereço</h3>
+                  <p class="wallet-address">${endereco}</p>
+                </div>
+                <div class="info-item">
+                  <h3>Total de Transações</h3>
+                  <p>${formatarNumero(totalTxs)}</p>
+                </div>
+              </div>
+              
+              <div class="balance">${formatarBTC(saldoBTC)} BTC</div>
+              
+              <div class="info-grid">
+                <div class="info-item">
+                  <h3>Total Recebido</h3>
+                  <p>${formatarBTC(receivedBTC)} BTC</p>
+                </div>
+                <div class="info-item">
+                  <h3>Total Enviado</h3>
+                  <p>${formatarBTC(sentBTC)} BTC</p>
+                </div>
+              </div>
+            </div>
+          `;
+          infoGeralDiv.innerHTML = infoHtml;
+          infoGeralDiv.classList.add('visible');
+          
+          // Animação de flutuação no saldo
+          const balanceElement = infoGeralDiv.querySelector('.balance');
+          balanceElement.style.animation = 'float 3s ease-in-out infinite';
+        }
+
+        const txs = data.txs || [];
+        if (txs.length === 0 && beforeHash === null) {
+          listaTxDiv.querySelector('.transactions').innerHTML = `
+            <h3><i class="fas fa-exchange-alt"></i> Transações</h3>
+            <div class="empty-state">
+              <i class="far fa-folder-open"></i>
+              <p>Nenhuma transação encontrada para este endereço</p>
+            </div>
+          `;
+          carregarMaisBtn.style.display = 'none';
+          carregando = false;
+          return;
+        }
+
+        // Exibe as transações carregadas
+        let transactionsHtml = '';
+        txs.forEach(tx => {
+          // Calcula valor da transação para o endereço
+          let valorSatoshis = 0;
+
+          tx.outputs.forEach(output => {
+            if (output.addresses && output.addresses.includes(endereco)) {
+              valorSatoshis += output.value;
+            }
+          });
+
+          tx.inputs.forEach(input => {
+            if (input.addresses && input.addresses.includes(endereco)) {
+              valorSatoshis -= input.output_value || input.value || 0;
+            }
+          });
+
+          const valorBTC = valorSatoshis / 1e8;
+          const dataTx = tx.confirmed ? new Date(tx.confirmed).toLocaleString('pt-BR') : 'Não confirmada';
+          const isIncoming = valorBTC > 0;
+          const valueClass = isIncoming ? 'incoming' : 'outgoing';
+          const valueIcon = isIncoming ? '<i class="fas fa-arrow-down"></i>' : '<i class="fas fa-arrow-up"></i>';
+          const valorUSD = valorBTC * precoBTC_USD;
+const valorUSDFormatado = formatarUSD(Math.abs(valorUSD));
+
+          transactionsHtml += `
+            <div class="transaction">
+              <div class="tx-hash">
+                <i class="fas fa-fingerprint"></i>
+                ${tx.hash}
+              </div>
+              <div class="tx-details">
+                <div class="tx-value ${valueClass}">
+  ${valueIcon} ${formatarBTC(Math.abs(valorBTC))} BTC<br>
+  <small style="opacity: 0.7;">(${valorUSDFormatado})</small>
+</div>
+
+                <div class="tx-date">
+                  <i class="far fa-clock"></i> ${dataTx}
+                </div>
+              </div>
+            </div>
+          `;
+        });
+
+        if (beforeHash === null) {
+          listaTxDiv.querySelector('.transactions').innerHTML = `
+            <h3><i class="fas fa-exchange-alt"></i> Transações</h3>
+            ${transactionsHtml}
+          `;
+        } else {
+          listaTxDiv.querySelector('.transactions').insertAdjacentHTML('beforeend', transactionsHtml);
+          
+          // Animação para transações recém-carregadas
+          const newTransactions = listaTxDiv.querySelectorAll('.transaction');
+          newTransactions.forEach((tx, index) => {
+            if (index >= newTransactions.length - txs.length) {
+              tx.style.opacity = '0';
+              tx.style.transform = 'translateY(20px)';
+              setTimeout(() => {
+                tx.style.transition = 'all 0.5s ease';
+                tx.style.opacity = '1';
+                tx.style.transform = 'translateY(0)';
+              }, 50);
+            }
+          });
+        }
+
+        listaTxDiv.classList.add('visible');
+        transacoesCarregadas += txs.length;
+
+        // Atualiza lastTxHash para paginação
+        if (txs.length > 0) {
+          lastTxHash = txs[txs.length - 1].block_height ? txs[txs.length - 1].hash : null;
+        } else {
+          lastTxHash = null;
+        }
+
+        // Mostra ou esconde botão "Carregar Mais"
+        if (transacoesCarregadas < totalTxs && lastTxHash) {
+          carregarMaisBtn.style.display = 'inline-block';
+          carregarMaisBtn.disabled = false;
+          carregarMaisBtn.innerHTML = '<i class="fas fa-arrow-down"></i> Carregar Mais Transações';
+        } else {
+          carregarMaisBtn.style.display = 'none';
+        }
+
+      } catch (err) {
+        if (beforeHash === null) {
+          infoGeralDiv.style.display = 'none';
+          listaTxDiv.style.display = 'none';
+        }
+        carregarMaisBtn.style.display = 'none';
+        mostrarErro('Erro: ' + err.message);
+      }
+      carregando = false;
+    }
+  </script>
+</body>
+</html>
